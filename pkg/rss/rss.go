@@ -26,6 +26,20 @@ type Item struct {
 	PubTime string `xml:"pubDate"`
 }
 
+// ParseRss читает новости из rss рассылки url с интервалом period
+// и отправляет их в chan posts
+func ParseRss(url string, db storage.Interfase, period int, posts chan<- []storage.Post, errs chan<- error) {
+	for {
+		news, err := Parse(url)
+		if err != nil {
+			errs <- err
+			continue
+		}
+		posts <- news
+		time.Sleep(time.Minute * time.Duration(period))
+	}
+}
+
 // Parse возвращает слайс новостей из rss рассылки из url
 func Parse(url string) ([]storage.Post, error) {
 	resp, err := http.Get(url)
