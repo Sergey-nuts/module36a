@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"module36a/pkg/api"
-	"module36a/pkg/parserss"
+	"module36a/pkg/rss"
 	"module36a/pkg/storage"
 	"module36a/pkg/storage/postgr"
 )
@@ -51,7 +51,7 @@ func main() {
 
 	// чтение rss каналов в отдельных горутинах
 	for _, url := range conf.RssUrls {
-		go parserss.Parse(url, db, conf.Period, posts, errs)
+		go rss.ParseRss(url, db, conf.Period, posts, errs)
 	}
 
 	// логирование ошибок
@@ -61,15 +61,19 @@ func main() {
 		}
 	}()
 
+	// добавление новостей в базу данных
 	go func() {
 		for news := range posts {
-			db.AddNews(news)
+			err := db.AddNews(news)
+			if err != nil {
+				errs <- err
+			}
 		}
 	}()
 
 	// запуск веб-сервера с API и приложением
 	log.Println("starting server")
-	err = http.ListenAndServe(":8080", api.Router())
+	err = http.ListenAndServe(":80", api.Router())
 	if err != nil {
 		log.Fatal(err)
 	}

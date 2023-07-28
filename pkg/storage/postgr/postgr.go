@@ -34,7 +34,7 @@ func (p *Postgres) AddNews(news []storage.Post) error {
 			if strings.Contains(err.Error(), "duplicate key value") {
 				continue
 			}
-			return fmt.Errorf("%w", err)
+			return fmt.Errorf("postgrsql: %w", err)
 		}
 	}
 
