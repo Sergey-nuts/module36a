@@ -2,9 +2,10 @@ package postgr
 
 import (
 	"context"
+	"fmt"
 	"module36a/pkg/storage"
+	"strings"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -24,29 +25,20 @@ func New(conf string) (*Postgres, error) {
 // AddNews добавляет новости из news в базу даннх
 func (p *Postgres) AddNews(news []storage.Post) error {
 	ctx := context.Background()
-	tx, err := p.db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-
-	// пакетный запрос
-	batch := new(pgx.Batch)
 	for _, post := range news {
-		batch.Queue(`
+		_, err := p.db.Exec(ctx, `
 			INSERT INTO news(title, content, pubtime, link)
 			VALUES ($1, $2, $3, $4);
-		`,
-			post.Title, post.Content, post.PubTime, post.Link,
-		)
+		`, post.Title, post.Content, post.PubTime, post.Link)
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate key value") {
+				continue
+			}
+			return fmt.Errorf("%w", err)
+		}
 	}
-	res := tx.SendBatch(ctx, batch)
 
-	err = res.Close()
-	if err != nil {
-		return err
-	}
-	return tx.Commit(ctx)
+	return nil
 }
 
 // News возвращает последние n новостенй из базы данных
@@ -54,7 +46,7 @@ func (p *Postgres) News(n int) ([]storage.Post, error) {
 	rows, err := p.db.Query(context.Background(), `
 		SELECT id, title, content, pubtime, link 
 		FROM news
-		ORDER BY pubtime
+		ORDER BY pubtime DESC
 		LIMIT $1;
 	`,
 		n,

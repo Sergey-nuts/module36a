@@ -2,6 +2,7 @@ package postgr
 
 import (
 	"module36a/pkg/storage"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -14,7 +15,7 @@ func TestDB(t *testing.T) {
 	// postgrUser := os.Getenv("dbuser")
 	// postgrPwd := os.Getenv("dbpass")
 	// dbhost := os.Getenv("dbhost")
-	// db, err := New("postgres://" + postgrUser + ":" + postgrPwd + "@" + dbhost + "/module36a-test")
+	// db, err := New("postgres://" + postgrUser + ":" + postgrPwd + "@" + dbhost + "/testDB")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,7 +36,7 @@ func TestDB(t *testing.T) {
 	}
 	news[0].ID = got[0].ID
 	news[1].ID = got[1].ID
-	if news[0] != got[1] && news[1] != got[0] /*!reflect.DeepEqual(news, got)*/ {
+	if !reflect.DeepEqual(news, got) {
 		t.Fatalf("postgr.news got=%v, want=%v", got, news)
 	}
 }
