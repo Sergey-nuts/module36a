@@ -2,6 +2,7 @@ package rss
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io"
 	"module36a/pkg/storage"
 	"net/http"
@@ -9,6 +10,10 @@ import (
 
 	"github.com/microcosm-cc/bluemonday"
 )
+
+type HTTPClient interface {
+	Get(url string) (*http.Response, error)
+}
 
 type rssFeed struct {
 	Rss     string  `xml:"rss"`
@@ -24,6 +29,14 @@ type Item struct {
 	Content string `xml:"description"`
 	Link    string `xml:"link"`
 	PubTime string `xml:"pubDate"`
+}
+
+var (
+	Client HTTPClient
+)
+
+func init() {
+	Client = &http.Client{}
 }
 
 // ParseRss читает новости из rss рассылки url с интервалом period
@@ -42,8 +55,9 @@ func ParseRss(url string, db storage.Interfase, period int, posts chan<- []stora
 
 // Parse возвращает слайс новостей из rss рассылки из url
 func Parse(url string) ([]storage.Post, error) {
-	resp, err := http.Get(url)
+	resp, err := Client.Get(url)
 	if err != nil {
+		fmt.Printf("resp: %v", resp)
 		return nil, err
 	}
 
