@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"module36a/pkg/storage"
-	"strings"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -28,12 +27,10 @@ func (p *Postgres) AddNews(news []storage.Post) error {
 	for _, post := range news {
 		_, err := p.db.Exec(ctx, `
 			INSERT INTO news(title, content, pubtime, link)
-			VALUES ($1, $2, $3, $4);
+			VALUES ($1, $2, $3, $4)
+			ON CONFLICT (link) DO NOTHING;
 		`, post.Title, post.Content, post.PubTime, post.Link)
 		if err != nil {
-			if strings.Contains(err.Error(), "duplicate key value") {
-				continue
-			}
 			return fmt.Errorf("postgrsql: %w", err)
 		}
 	}
